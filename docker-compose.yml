@@ -13,6 +13,7 @@ services:
       PORT: "3000"
       DATABASE_URL: "postgresql://warehouse:warehouse_dev@postgres:5432/warehouse"
       REDIS_URL: "redis://redis:6379"
+      PICK_LOCK_TTL_SECONDS: "${PICK_LOCK_TTL_SECONDS:-900}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -29,6 +30,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./warehouse-picking-task/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./seeds/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./migrations/03-order-locks.sql:/docker-entrypoint-initdb.d/03-order-locks.sql:ro
     healthcheck:
       test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "warehouse", "-d", "warehouse"]
       interval: 5s
