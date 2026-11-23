@@ -13,4 +13,3 @@ export async function getOrder(req, res) {
 
     return res.json(order);
 }
-
