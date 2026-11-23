@@ -1,0 +1,52 @@
+services:
+  api:
+    build: .
+    command: ["npm", "run", "dev", "--", "--legacy-watch"]
+    volumes:
+      - ./app.js:/app/app.js
+      - ./index.js:/app/index.js
+      - ./config:/app/config
+      - ./modules:/app/modules
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      PORT: "3000"
+      DATABASE_URL: "postgresql://warehouse:warehouse_dev@postgres:5432/warehouse"
+      REDIS_URL: "redis://redis:6379"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: warehouse
+      POSTGRES_USER: warehouse
+      POSTGRES_PASSWORD: warehouse_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./warehouse-picking-task/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./seeds/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "warehouse", "-d", "warehouse"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+
+volumes:
+  postgres_data:
+  redis_data:
